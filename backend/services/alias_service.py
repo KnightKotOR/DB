@@ -10,58 +10,65 @@ def create_alias(ar: AliasRequest) -> AliasResponse:
     """
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
-    db_name = ""
-    table_name = ""
-    db_id = 0
-    
-    if ar.table == None:
-        # Если поле table пустое, то создаем псевдоним для имени бд
-        try:
-            # Проверка существования псевдонима
-            query = f"""
-            SELECT db_alias
-            FROM dbs
-            WHERE db_name = `{ar.database}`;
-            """
-            cursor.execute(query)
-            db_alias = cursor.fetchone()['db_alias']
-            # (todo) raise Exception!
-        except TypeError as e:
-            # Если нет, то создаем новый
-            try:
-                query = f"""
-                UPDATE dbs
-                SET db_alias = `{ar.alias}`
-                WHERE db_name = `{ar.database}`;
-                """
-                cursor.execute(query)
-            except Error as e:
-                raise HTTPException(status_code=404, detail=str(e))
-    else:
-        # Если поле table не пустое, то создаем псевдоним для имени таблицы бд
-        try:
-            # Проверка существования псевдонима
-            query = f"""
-            SELECT table_alias
-            FROM db_tables
-            WHERE db_name = `{ar.database}` AND table_name = `{ar.table}`;
-            """
-            cursor.execute(query)
-            table_alias = cursor.fetchone()['table_alias']
-            # (todo) raise Exception!
-        except TypeError as e:
-            # Если нет, создаем новый
-            try:
-                query = f"""
-                UPDATE db_tables
-                SET table_alias = `{ar.alias}`
-                WHERE db_name = `{ar.database}` AND table_name = `{ar.table}`;
-                """
-                cursor.execute(query)
-            except Error as e:
-                raise HTTPException(status_code=404, detail=str(e))
+
+    # Создание alias для БД
+    if ar.table == "":
+        # Проверить, есть ли alias
+        cursor.execute(
+            "SELECT db_alias FROM dbs WHERE db_name = %s;",
+            (ar.database,)
+        )
+        row = cursor.fetchone()
+
+        if row and row["db_alias"] is not None:
+            raise HTTPException(status_code=400, detail="Alias already exists")
+
+        # Создать alias БД
+        cursor.execute(
+            "UPDATE dbs SET db_alias = %s WHERE db_name = %s;",
+            (ar.alias, ar.database)
+        )
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+        return AliasResponse(message="OK")
+
+    # Создание alias для таблицы БД
+    cursor.execute(
+        "SELECT db_id FROM dbs WHERE db_name = %s;",
+        (ar.database,)
+    )
+    row = cursor.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Database not found")
+
+    db_id = row["db_id"]
+
+    # Поиск таблицы
+    cursor.execute(
+        "SELECT table_id, table_alias FROM db_tables WHERE db_id = %s AND table_name = %s;",
+        (db_id, ar.table)
+    )
+    row = cursor.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Table not found")
+
+    table_id = row["table_id"]
+    table_alias = row["table_alias"]
+
+    # Проверка существования alias таблицы
+    if table_alias:
+        raise HTTPException(status_code=400, detail="Alias already exists")
+
+    # Создание alias таблицы
+    cursor.execute(
+        "UPDATE db_tables SET table_alias = %s WHERE table_id = %s;",
+        (ar.alias, table_id)
+    )
+    conn.commit()
 
     cursor.close()
     conn.close()
 
-    return AliasResponse('OK')
+    return AliasResponse(message="OK")
