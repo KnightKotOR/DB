@@ -32,7 +32,7 @@ def create_alias(ar: AliasRequest) -> AliasResponse:
 
         cursor.close()
         conn.close()
-        return AliasResponse(message="OK")
+        return AliasResponse(message=f"Database alias created: database='{ar.database}', alias='{ar.alias}'")
 
     # Создание alias для таблицы БД
     cursor.execute(
@@ -71,7 +71,10 @@ def create_alias(ar: AliasRequest) -> AliasResponse:
     cursor.close()
     conn.close()
 
-    return AliasResponse(message="OK")
+    return AliasResponse(message=(
+            f"Table alias created: database='{ar.database}', "
+            f"table='{ar.table}', alias='{ar.alias}'"
+        ))
 
 def delete_alias(ar: AliasRequest) -> AliasResponse:
     """
@@ -88,6 +91,7 @@ def delete_alias(ar: AliasRequest) -> AliasResponse:
             (ar.database,)
         )
         row = cursor.fetchone()
+        old_alias = row["db_alias"]
 
         if not row:
             raise HTTPException(status_code=404, detail="Database not found")
@@ -104,7 +108,10 @@ def delete_alias(ar: AliasRequest) -> AliasResponse:
 
         cursor.close()
         conn.close()
-        return AliasResponse(message="OK")
+        return AliasResponse(message=(
+                f"Database alias deleted: database='{ar.database}', "
+                f"old_alias='{old_alias}'"
+            ))
 
     # Удаление alias таблицы
     # Проверка существования БД, таблицы и alias
@@ -141,7 +148,10 @@ def delete_alias(ar: AliasRequest) -> AliasResponse:
     )
     conn.commit()
 
-    cursor.close()
+    cursor.close()  
     conn.close()
 
-    return AliasResponse(message="OK")
+    return AliasResponse(message=(
+            f"Table alias deleted: database='{ar.database}', "
+            f"table='{ar.table}', old_alias='{table_alias}'"
+        ))

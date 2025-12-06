@@ -28,7 +28,7 @@ def execute_query(qr: QueryRequest) -> QueryResponse:
         try:
             cursor.execute(
             """
-            SELECT db_name
+            SELECT db_name, db_id
             FROM dbs
             WHERE db_alias = %s;
             """,
