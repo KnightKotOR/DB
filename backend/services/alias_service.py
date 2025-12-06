@@ -72,3 +72,76 @@ def create_alias(ar: AliasRequest) -> AliasResponse:
     conn.close()
 
     return AliasResponse(message="OK")
+
+def delete_alias(ar: AliasRequest) -> AliasResponse:
+    """
+    Deletes db/table alias
+    """
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Удаление alias БД
+    if ar.table == "":
+        # Проверка существования БД и alias
+        cursor.execute(
+            "SELECT db_alias FROM dbs WHERE db_name = %s;",
+            (ar.database,)
+        )
+        row = cursor.fetchone()
+
+        if not row:
+            raise HTTPException(status_code=404, detail="Database not found")
+
+        if row["db_alias"] is None:
+            raise HTTPException(status_code=400, detail="Alias does not exist")
+
+        # Удаление alias
+        cursor.execute(
+            "UPDATE dbs SET db_alias = NULL WHERE db_name = %s;",
+            (ar.database,)
+        )
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+        return AliasResponse(message="OK")
+
+    # Удаление alias таблицы
+    # Проверка существования БД, таблицы и alias
+    cursor.execute(
+        "SELECT db_id FROM dbs WHERE db_name = %s;",
+        (ar.database,)
+    )
+    row = cursor.fetchone()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Database not found")
+
+    db_id = row["db_id"]
+
+    cursor.execute(
+        "SELECT table_id, table_alias FROM db_tables WHERE db_id = %s AND table_name = %s;",
+        (db_id, ar.table)
+    )
+    row = cursor.fetchone()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Table not found")
+
+    table_id = row["table_id"]
+    table_alias = row["table_alias"]
+
+    if table_alias is None:
+        raise HTTPException(status_code=400, detail="Alias does not exist")
+
+    # Удаление alias
+    cursor.execute(
+        "UPDATE db_tables SET table_alias = NULL WHERE table_id = %s;",
+        (table_id,)
+    )
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return AliasResponse(message="OK")
