@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import ImportPage from "./pages/ImportPage";
 import AliasPage from "./pages/AliasPage";
+import QueryPage from "./pages/QueryPage";
 
 const App = () => {
   return (
@@ -15,6 +16,9 @@ const App = () => {
             <Link to="/alias">
               <button>Aliases</button>
             </Link>
+            <Link to="/queries">
+              <button>Queries</button>
+            </Link>
           </nav>
         </header>
 
@@ -24,6 +28,9 @@ const App = () => {
           </Routes>
           <Routes>
             <Route path="/alias" element={<AliasPage />} />
+          </Routes>
+          <Routes>
+            <Route path="/queries" element={<QueryPage />} />
           </Routes>
         </main>
       </div>
