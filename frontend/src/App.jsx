@@ -1,23 +1,19 @@
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import ImportPage from "./pages/ImportPage";
-import StatsPage from "./pages/StatsPage";
-import TimestampsPage from "./pages/TimestampsPage";
+import AliasPage from "./pages/AliasPage";
 
 const App = () => {
   return (
     <Router>
       <div className="app">
         <header className="p-4 bg-gray-800 text-white flex justify-between items-center">
-          <h1 className="text-xl font-bold">Metadata Manager</h1>
+          <h1 className="text-xl font-bold">Metadata</h1>
           <nav className="flex gap-2">
             <Link to="/import">
               <button>Import database</button>
             </Link>
-            <Link to="/stats">
-              <button>Statistics</button>
-            </Link>
-            <Link to="/timestamps">
-              <button>Timestamps</button>
+            <Link to="/alias">
+              <button>Aliases</button>
             </Link>
           </nav>
         </header>
@@ -25,8 +21,9 @@ const App = () => {
         <main className="p-6">
           <Routes>
             <Route path="/import" element={<ImportPage />} />
-            <Route path="/stats" element={<StatsPage />} />
-            <Route path="/timestamps" element={<TimestampsPage />} />
+          </Routes>
+          <Routes>
+            <Route path="/alias" element={<AliasPage />} />
           </Routes>
         </main>
       </div>
