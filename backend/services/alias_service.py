@@ -11,19 +11,19 @@ def create_alias(ar: AliasRequest) -> AliasResponse:
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # Создание alias для БД
+    # --Создание alias для БД--
     if ar.table == "":
         # Проверить, есть ли alias
         cursor.execute(
-            "SELECT db_alias FROM dbs WHERE db_name = %s;",
-            (ar.database,)
+            "SELECT db_name, db_alias FROM dbs WHERE db_name = %s OR db_alias = %s;",
+            (ar.database,ar.database,)
         )
         row = cursor.fetchone()
 
         if row and row["db_alias"] is not None:
             raise HTTPException(status_code=400, detail="Alias already exists")
 
-        # Создать alias БД
+        # Добавить alias в БД
         cursor.execute(
             "UPDATE dbs SET db_alias = %s WHERE db_name = %s;",
             (ar.alias, ar.database)
@@ -34,10 +34,10 @@ def create_alias(ar: AliasRequest) -> AliasResponse:
         conn.close()
         return AliasResponse(message=f"Database alias created: database='{ar.database}', alias='{ar.alias}'")
 
-    # Создание alias для таблицы БД
+    # --Создание alias для таблицы БД--
     cursor.execute(
-        "SELECT db_id FROM dbs WHERE db_name = %s;",
-        (ar.database,)
+        "SELECT db_id FROM dbs WHERE db_name = %s OR db_alias = %s;",
+        (ar.database,ar.database,)
     )
     row = cursor.fetchone()
     if not row:
@@ -87,48 +87,48 @@ def delete_alias(ar: AliasRequest) -> AliasResponse:
     if ar.table == "":
         # Проверка существования БД и alias
         cursor.execute(
-            "SELECT db_alias FROM dbs WHERE db_name = %s;",
-            (ar.database,)
+            "SELECT db_name, db_alias FROM dbs WHERE db_name = %s OR db_alias = %s;",
+            (ar.database,ar.database,)
         )
         row = cursor.fetchone()
-        old_alias = row["db_alias"]
+        db_name, old_alias = row["db_name"], row["db_alias"]
 
-        if not row:
+        if not old_alias:
             raise HTTPException(status_code=404, detail="Database not found")
 
-        if row["db_alias"] is None:
+        if old_alias is None:
             raise HTTPException(status_code=400, detail="Alias does not exist")
 
         # Удаление alias
         cursor.execute(
             "UPDATE dbs SET db_alias = NULL WHERE db_name = %s;",
-            (ar.database,)
+            (db_name,)
         )
         conn.commit()
 
         cursor.close()
         conn.close()
         return AliasResponse(message=(
-                f"Database alias deleted: database='{ar.database}', "
+                f"Database alias deleted: database='{db_name}', "
                 f"old_alias='{old_alias}'"
             ))
 
     # Удаление alias таблицы
     # Проверка существования БД, таблицы и alias
     cursor.execute(
-        "SELECT db_id FROM dbs WHERE db_name = %s;",
-        (ar.database,)
+        "SELECT db_name, db_id FROM dbs WHERE db_name = %s OR db_alias = %s;",
+        (ar.database,ar.database,)
     )
     row = cursor.fetchone()
 
     if not row:
         raise HTTPException(status_code=404, detail="Database not found")
 
-    db_id = row["db_id"]
+    db_id, db_name = row["db_id"], row["db_name"]
 
     cursor.execute(
-        "SELECT table_id, table_alias FROM db_tables WHERE db_id = %s AND table_name = %s;",
-        (db_id, ar.table)
+        "SELECT table_id, table_alias, table_name FROM db_tables WHERE db_id = %s AND (table_name = %s OR table_alias = %s);",
+        (db_id, ar.table, ar.table,)
     )
     row = cursor.fetchone()
 
@@ -137,6 +137,7 @@ def delete_alias(ar: AliasRequest) -> AliasResponse:
 
     table_id = row["table_id"]
     table_alias = row["table_alias"]
+    table_name = row["table_name"]
 
     if table_alias is None:
         raise HTTPException(status_code=400, detail="Alias does not exist")
@@ -152,6 +153,6 @@ def delete_alias(ar: AliasRequest) -> AliasResponse:
     conn.close()
 
     return AliasResponse(message=(
-            f"Table alias deleted: database='{ar.database}', "
-            f"table='{ar.table}', old_alias='{table_alias}'"
+            f"Table alias deleted: database='{db_name}', "
+            f"table='{table_name}', old_alias='{table_alias}'"
         ))
