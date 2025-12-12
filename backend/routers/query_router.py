@@ -5,7 +5,7 @@ from services.query_service import execute_query
 
 router = APIRouter(tags=["Query"])
 
-@router.get("/query", response_model=QueryResponse)
+@router.post("/query", response_model=QueryResponse)
 def execute_query_on_server(qr: QueryRequest):
     """Returns list of databases."""
     return execute_query(qr)
