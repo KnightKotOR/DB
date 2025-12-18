@@ -1,2 +1,8 @@
 \babel@toc {russian}{}\relax 
-\contentsline {section}{\numberline {1}Цель и задачи}{3}{}%
+\contentsline {chapter}{ВВЕДЕНИЕ}{4}{}%
+\contentsline {chapter}{ПОСТАНОВКА ЗАДАЧИ}{5}{}%
+\contentsline {chapter}{\numberline {1}ПРОЕКТИРОВАНИЕ ПРИЛОЖЕНИЯ}{6}{}%
+\contentsline {chapter}{\numberline {2}ХРАНЕНИЕ МЕТАДАННЫХ}{8}{}%
+\contentsline {section}{\numberline {2.1}База метаданных}{8}{}%
+\contentsline {section}{\numberline {2.2}Заполнение базы метаданных}{10}{}%
+\contentsline {section}{\numberline {2.3}Примеры исходных данных}{11}{}%

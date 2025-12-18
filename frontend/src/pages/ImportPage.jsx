@@ -1,38 +1,19 @@
-import { useEffect, useState } from "react";
-import api from "../api";
+import { useOutletContext } from "react-router-dom";
 import ImportForm from "../components/ImportForm";
 
 const ImportPage = () => {
-  const [databases, setDatabases] = useState([]);
-
-  const fetchDatabases = () => {
-    api.get("/databases")
-      .then((res) => setDatabases(res.data))
-      .catch((err) => console.error("Error fetching databases:", err));
-  };
-
-  useEffect(() => {
-    fetchDatabases();
-  }, []);
+  // Получаем функцию обновления из Layout
+  const { refreshDatabases } = useOutletContext();
 
   return (
-    <div>
-      <h2 className="text-2xl font-semibold mb-4">Import databases</h2>
+    <div className="max-w-2xl mx-auto">
+      <h2 className="text-3xl font-bold mb-6 text-white">Import Database</h2>
+      <p className="text-gray-400 mb-8">
+        Connect a new MySQL database to the metadata catalog.
+      </p>
 
-      <section className="mb-8">
-        <h3 className="text-lg font-medium mb-2">Databases in metadata catalog:</h3>
-        {databases.length ? (
-          <ul className="list-disc pl-6">
-            {databases.map((db) => (
-              <li key={db.db_id}>{db.db_name}</li>
-            ))}
-          </ul>
-        ) : (
-          <p>No data.</p>
-        )}
-      </section>
-
-      <ImportForm onImportSuccess={fetchDatabases} />
+      {/* Передаем refreshDatabases в форму, чтобы вызвать её после успеха */}
+      <ImportForm onImportSuccess={refreshDatabases} />
     </div>
   );
 };

@@ -1,84 +1,103 @@
-\documentclass[12pt]{article}
-\usepackage[russian]{babel}
+\documentclass[12pt]{report}
+\usepackage{tikz}
+\usepackage[utf8x]{inputenc}
+\usepackage[ruled,vlined]{algorithm2e}
+\usepackage[english, russian]{babel}
+\usepackage[figurename=Fig.]{caption}
 \usepackage{indentfirst}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{listings}
+\usepackage{pdflscape}
+\usepackage[section]{placeins}
+\usepackage{float}
 \usepackage [left=30 mm, top=15 mm, right=30 mm, bottom=20mm, nohead, footskip=10 mm] {geometry}
 
 \parindent=24pt
 
+
+% change chapter formating
+\makeatletter
+\def\@makechapterhead#1{%
+	\vspace*{50pt}%
+	{\parindent \z@ \raggedright \normalfont
+		\Huge\bfseries \thechapter\ #1\par\nobreak
+		\vskip 40pt
+}}
+\makeatother
+
+\addto\captionsrussian{\renewcommand\contentsname{Содержание}}
+
+\tolerance 1414
+\hbadness 1414
+\emergencystretch 1.5em
+\hfuzz 0.3pt
+\vfuzz \hfuzz
+\clubpenalty=10000
+\widowpenalty=10000
+\brokenpenalty=4991   
+
+\lstset{
+	frame=single,
+	basicstyle=\ttfamily\small,
+	numbers=left,
+	numberstyle=\tiny\color{gray},
+	breaklines=true,
+	tabsize=4,
+	captionpos=b
+}
+
+\captionsetup[figure]{font=small, width=\textwidth, name=Рис., justification=centering}
+\captionsetup[subfigure]{font=small}
+\captionsetup[table]{singlelinecheck=false,font=small,width=\textwidth,justification=justified}
+\setkeys{Gin}{width=\textwidth}
+\usepackage[section]{placeins}
+
+\usepackage{csquotes}
+\usepackage[
+backend=biber,
+bibencoding=utf8,
+sorting=none,
+style=gost-numeric,
+language=auto,
+autolang=other,
+sortcites=true,
+movenames=false,
+maxnames=5,
+minnames=3,
+doi=false,
+isbn=false,
+]{biblatex}
+\DeclareDelimFormat{bibinitdelim}{}
+\addbibresource{bib.bib}
+
+
+
 \begin{document}
+	\input{title}	
+	\newgeometry{margin=0pt}
 	\thispagestyle{empty}
 	
-	\begin{center}
-		\large{МИНОБРНАУКИ РОССИИ} \par
-		\vspace{0.3cm}
-		\normalsize
-		{ФЕДЕРАЛЬНОЕ ГОСУДАРСТВЕННОЕ АВТОНОМНОЕ ОБРАЗОВАТЕЛЬНОЕ УЧРЕЖДЕНИЕ ВЫСШЕГО ОБРАЗОВАНИЯ} \par
-		\vspace{0.3cm}
-		\textbf{\guillemotleft САНКТ-ПЕТЕРБУРГСКИЙ ПОЛИТЕХНИЧЕСКИЙ}
-		\textbf{УНИВЕРСИТЕТ ПЕТРА ВЕЛИКОГО \guillemotright} \par
-		\vspace{0.3cm}
-		
-		{Институт компьютерных наук и кибербезопасности}\par
-		{Высшая школа технологий искусственного интеллекта}\par
-		{Направление 02.03.01 Математика и Компьютерные науки}	
-	\end{center}
+%	\begin{figure}
+%		\centering
+%		\includegraphics[width=\paperwidth,height=\paperheight]{title}
+%	\end{figure}
 	
-	\vfill
-	
-	\begin{center}
-		{\LARGE КУРСОВАЯ РАБОТА} \par
-		\vspace{0.3cm}
-		{\large по дисциплине \guillemotleft Управление знаниями и технологии баз данных\guillemotright}\par
-		{\LARGE Разработка и программирование базы метаданных\\ }\par
-	\end{center}
-	
-	\vfill
-	
-	\begin{flushleft}
-		Студент: \hspace{1.8cm} \rule[0pt]{2.5cm}{0.5pt}\hfill Сергиенко Кирилл Александрович\par
-		\vspace{1.5cm}
-		Преподаватель: \hspace{0.55cm} \rule[0pt]{2.5cm}{0.5pt}\hfill  Попов Сергей Геннадьевич
-	\end{flushleft}
-	
-	\vspace{0.5cm}
-	
-	\begin{flushright}
-		\guillemotleft \rule[0pt]{0.8cm}{0.5pt}\guillemotright \rule[0pt]{2cm}{0.5pt} 20\rule[0pt]{0.5cm}{0.5pt} г.
-	\end{flushright}
-	
-	\vfill
-	
-	\begin{center}
-		Санкт-Петербург -- 2025
-	\end{center}
-	
-
-	
-	
-	\thispagestyle{empty}
+	\restoregeometry
 	\newpage
+	\input{abstract}
 	\tableofcontents
+	\input{intro}
+	\input{problem_statement}
+	\input{application}
+	\input{metadata}
+	%\input{ui}
+	%\input{end}
 	
+	\printbibliography[title=Список использованных источников]
+	\addcontentsline{toc}{chapter}{Список использованных источников}
+	%\input{appendix_a}
+	%\input{appendix_b}
 	
-	
-	\newpage
-	\section{Цель и задачи}
-	
-	\par Цель — разработать масштабируемое программное обеспечение для автоматического извлечения, хранения и управления метаданными баз данных с поддержкой пользовательским псевдонимов для обращения к хранимым базам.
-	
-	\par Задачи:
-
-	\begin{enumerate}
-		\item Предусмотреть возможность подключения и работы с несколькими базами данных MySQL, содержащими произвольные структуры таблиц и данных.
-		\item Разработать и реализовать схему базы данных для хранения метаданных, включающую информацию о:
-		\begin{itemize}
-			\item базах данных,
-			\item таблицах,
-			\item сущностях,
-			\item ключах.
-		\end{itemize}
-		\item Реализовать механизм автоматизированной выгрузки метаданных из подключаемых баз данных и сохранения их в разработанную базу.
-		\item Реализовать интерфейс, позволяющий пользователю задавать псевдонимы для баз данных и их таблиац, а также выполнять запросы вида SELECT FROM WHERE с использованием данных псведонимов. 
-	\end{enumerate}
 	
 \end{document}
