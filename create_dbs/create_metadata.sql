@@ -14,8 +14,7 @@ USE metadata;
 -- ==========================
 CREATE TABLE IF NOT EXISTS dbs (
     db_id INT AUTO_INCREMENT PRIMARY KEY,
-    db_name VARCHAR(64) NOT NULL UNIQUE,
-    db_alias VARCHAR(64) UNIQUE
+    db_name VARCHAR(64) NOT NULL UNIQUE
 ) ENGINE=InnoDB;
 
 
@@ -26,7 +25,6 @@ CREATE TABLE IF NOT EXISTS db_tables (
     table_id INT AUTO_INCREMENT PRIMARY KEY,
     db_id INT NOT NULL,
     table_name VARCHAR(64) NOT NULL,
-    table_alias VARCHAR(64) NULL,
     FOREIGN KEY (db_id) REFERENCES dbs(db_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE

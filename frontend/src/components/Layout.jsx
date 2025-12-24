@@ -5,6 +5,7 @@ import api from "../api";
 const Layout = () => {
   const [databases, setDatabases] = useState([]);
 
+
   // Функция загрузки баз данных (вызывается при старте и после импорта)
   const fetchDatabases = () => {
     api.get("/databases")
@@ -15,6 +16,7 @@ const Layout = () => {
   useEffect(() => {
     fetchDatabases();
   }, []);
+  
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col">
@@ -62,7 +64,7 @@ const Layout = () => {
                 {databases.map((db) => (
                   <li key={db.db_id} className="p-3 bg-gray-750/50 hover:bg-gray-700 rounded-lg flex items-center justify-between transition-all group border border-gray-600">
                     <span className="font-medium truncate">{db.db_name}</span>
-                    <span className="text-xs px-2 py-1 bg-green-900/50 text-green-300 rounded-full border border-green-700">active</span>
+                    <span className="text-xs px-2 py-1 bg-green-900/50 text-green-300 rounded-full border border-green-700"></span>
                   </li>
                 ))}
               </ul>
