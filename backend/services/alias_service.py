@@ -21,7 +21,6 @@ def create_db_alias(name, alias):
     # если есть запись в alias_db - смотрим на alias, если он null - обновляем, иначе - ошибка
     try:
         row = alias_cursor.fetchone()
-        print(row)
         if row["db_alias_name"] is not None:
             raise HTTPException(status_code=400, detail="Alias already exists")
         else:
@@ -54,18 +53,75 @@ def create_db_alias(name, alias):
     alias_conn.close()
 
 
+
+def create_table_alias(database, name, alias):
+    meta_conn = get_connection()
+    meta_cursor = meta_conn.cursor(dictionary=True)
+
+    alias_conn = get_connection("query_aliases")
+    alias_cursor = alias_conn.cursor(dictionary=True)
+
+    # Проверить, есть ли alias в query_aliases
+    alias_cursor.execute(
+        "SELECT table_meta_id, table_alias_name FROM table_aliases WHERE table_alias_name = %s;",
+        (alias,)
+    )
+
+    # если есть запись в alias_table - смотрим на alias, если он null - обновляем, иначе - ошибка
+    try:
+        row = alias_cursor.fetchone()
+        if row["table_alias_name"] is not None:
+            raise HTTPException(status_code=400, detail="Alias already exists")
+        else:
+            alias_cursor.execute(
+                "UPDATE table_aliases SET table_alias_name = %s WHERE table_meta_id = %s;",
+                (alias, row["table_meta_id"],)
+            )
+            alias_conn.commit()
+
+    # если нет такой таблицы в alias_db - лезем в meta, ищем таблицу по имени и имени базы
+    except TypeError:
+        meta_cursor.execute(
+            "SELECT t.table_id FROM db_tables AS t "
+            "JOIN dbs ON dbs.db_id = t.db_id "
+            "WHERE t.table_name = %s AND dbs.db_name = %s;",
+            (name, database, )
+        )
+
+        db_row = meta_cursor.fetchone()
+        if db_row:
+            alias_cursor.execute(
+                "INSERT INTO table_aliases (table_meta_id, table_alias_name) VALUES (%s, %s);",
+                (db_row["table_id"], alias, )
+            )
+            alias_conn.commit()
+        else:
+            raise HTTPException(status_code=404, detail="Table does not exist")
+
+    meta_cursor.close()
+    alias_cursor.close()
+    meta_conn.close()
+    alias_conn.close()
+
+
 def create_alias(ar: AliasRequest) -> AliasResponse:
     """
     Creates db/table alias
     """
 
     # --Создание alias для БД--
-    if ar.table == "":
+    if ar.table == "" and ar.column == "":
         create_db_alias(ar.database, ar.alias)
-
         return AliasResponse(message=(
                 f"Database alias created: database='{ar.database}', alias='{ar.alias}'"
             ))
+
+    elif ar.column == "":
+        create_table_alias(ar.database, ar.table, ar.alias)
+        return AliasResponse(message=(
+            f"Table alias created: database='{ar.database}', table='{ar.table}', alias='{ar.alias}'"
+        ))
+
     return AliasResponse(message=(
         f"Something went wrong"
     ))
