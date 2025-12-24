@@ -207,125 +207,129 @@ def create_alias(ar: AliasRequest) -> AliasResponse:
         ))
 
 
-    # # --Создание alias для таблицы БД--
-    # meta_cursor.execute(
-    #     "SELECT db_id FROM dbs WHERE db_name = %s OR db_alias = %s;",
-    #     (ar.database,ar.database,)
-    # )
-    # row = meta_cursor.fetchone()
-    # if not row:
-    #     raise HTTPException(status_code=404, detail="Database not found")
-    #
-    # db_id = row["db_id"]
-    #
-    # # Поиск таблицы
-    # meta_cursor.execute(
-    #     "SELECT table_id, table_alias FROM db_tables WHERE db_id = %s AND table_name = %s;",
-    #     (db_id, ar.table)
-    # )
-    # row = meta_cursor.fetchone()
-    # if not row:
-    #     raise HTTPException(status_code=404, detail="Table not found")
-    #
-    # table_id = row["table_id"]
-    # table_alias = row["table_alias"]
-    #
-    # # Проверка существования alias таблицы
-    # if table_alias:
-    #     raise HTTPException(status_code=400, detail="Alias already exists")
-    #
-    # # Создание alias таблицы
-    # meta_cursor.execute(
-    #     "UPDATE db_tables SET table_alias = %s WHERE table_id = %s;",
-    #     (ar.alias, table_id)
-    # )
-    # meta_conn.commit()
-    #
-    # meta_cursor.close()
-    # meta_conn.close()
-    #
-    # return AliasResponse(message=(
-    #         f"Table alias created: database='{ar.database}', "
-    #         f"table='{ar.table}', alias='{ar.alias}'"
-    #     ))
+def delete_table_alias(database, name):
+    meta_conn = get_connection()
+    meta_cursor = meta_conn.cursor(dictionary=True)
+
+    alias_conn = get_connection("query_aliases")
+    alias_cursor = alias_conn.cursor(dictionary=True)
+
+    meta_cursor.execute(
+        "SELECT table_id FROM db_tables AS t "
+        "JOIN dbs ON t.db_id = dbs.db_id "
+        "WHERE dbs.db_name = %s AND t.table_name = %s;",
+        (database, name, ))
+
+    # если alias есть - удаляем
+    try:
+        row = meta_cursor.fetchone()
+        if row["table_id"] is not None:
+            alias_cursor.execute("SELECT table_meta_id FROM table_aliases WHERE table_meta_id = %s", (row["table_id"], ))
+            if alias_cursor.fetchone() is None:
+                raise HTTPException(status_code=404, detail=f"Table '{name}' does not have alias")
+
+            alias_cursor.execute("DELETE FROM table_aliases WHERE table_meta_id = %s", (row["table_id"], ))
+            alias_conn.commit()
+
+    # если нет - выкидываем ошибку
+    except TypeError:
+        raise HTTPException(status_code=404, detail=f"Table '{name}' does not exist")
+
+    meta_cursor.close()
+    alias_cursor.close()
+    meta_conn.close()
+    alias_conn.close()
+
+def delete_database_alias(name):
+    meta_conn = get_connection()
+    meta_cursor = meta_conn.cursor(dictionary=True)
+
+    alias_conn = get_connection("query_aliases")
+    alias_cursor = alias_conn.cursor(dictionary=True)
+
+    meta_cursor.execute(
+        "SELECT db_id FROM dbs WHERE db_name = %s;",
+        (name, ))
+
+    # если alias есть - удаляем
+    try:
+        row = meta_cursor.fetchone()
+        if row["db_id"] is not None:
+            alias_cursor.execute("SELECT db_meta_id FROM db_aliases WHERE db_meta_id = %s", (row["db_id"], ))
+            if not alias_cursor.fetchall():
+                raise HTTPException(status_code=404, detail=f"Database '{name}' does not have alias")
+
+            alias_cursor.execute("DELETE FROM db_aliases WHERE db_meta_id = %s", (row["db_id"], ))
+            alias_conn.commit()
+
+    # если нет - выкидываем ошибку
+    except TypeError:
+        raise HTTPException(status_code=404, detail=f"Database '{name}' does not exist")
+
+    meta_cursor.close()
+    alias_cursor.close()
+    meta_conn.close()
+    alias_conn.close()
+
+
+def delete_column_alias(database, table, name):
+    meta_conn = get_connection()
+    meta_cursor = meta_conn.cursor(dictionary=True)
+
+    alias_conn = get_connection("query_aliases")
+    alias_cursor = alias_conn.cursor(dictionary=True)
+
+    meta_cursor.execute(
+        "SELECT c.column_id FROM db_columns AS c "
+        "JOIN db_tables as t ON c.table_id = t.table_id "
+        "JOIN dbs ON t.db_id = dbs.db_id "
+        "WHERE dbs.db_name = %s AND t.table_name = %s AND c.column_name = %s;",
+        (database, table, name, ))
+    # если alias есть - удаляем
+    try:
+        row = meta_cursor.fetchone()
+        if row["column_id"] is not None:
+            alias_cursor.execute("SELECT column_meta_id FROM column_aliases WHERE column_meta_id = %s", (row["column_id"], ))
+            if not alias_cursor.fetchall():
+                raise HTTPException(status_code=404, detail=f"Column '{name}' does not have alias")
+
+            alias_cursor.execute("DELETE FROM column_aliases WHERE column_meta_id = %s", (row["column_id"], ))
+            alias_conn.commit()
+
+    # если нет - выкидываем ошибку
+    except TypeError:
+        raise HTTPException(status_code=404, detail=f"Column '{name}' does not exist")
+
+    meta_cursor.close()
+    alias_cursor.close()
+    meta_conn.close()
+    alias_conn.close()
+
 
 def delete_alias(ar: AliasRequest) -> AliasResponse:
     """
     Deletes db/table alias
     """
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
 
-    # Удаление alias БД
-    if ar.table == "":
-        # Проверка существования БД и alias
-        cursor.execute(
-            "SELECT db_name, db_alias FROM dbs WHERE db_name = %s OR db_alias = %s;",
-            (ar.database,ar.database,)
-        )
-        row = cursor.fetchone()
-        db_name, old_alias = row["db_name"], row["db_alias"]
-
-        if not old_alias:
-            raise HTTPException(status_code=404, detail="Database not found")
-
-        if old_alias is None:
-            raise HTTPException(status_code=400, detail="Alias does not exist")
-
-        # Удаление alias
-        cursor.execute(
-            "UPDATE dbs SET db_alias = NULL WHERE db_name = %s;",
-            (db_name,)
-        )
-        conn.commit()
-
-        cursor.close()
-        conn.close()
+    if ar.database != "" and ar.table != "" and ar.column != "":
+        delete_column_alias(ar.database, ar.table, ar.column)
         return AliasResponse(message=(
-            f"Database alias deleted: database='{db_name}', "
-            f"old_alias='{old_alias}'"
+            f"Column alias deleted: database='{ar.column}'"
         ))
 
-    # Удаление alias таблицы
-    # Проверка существования БД, таблицы и alias
-    cursor.execute(
-        "SELECT db_name, db_id FROM dbs WHERE db_name = %s OR db_alias = %s;",
-        (ar.database,ar.database,)
-    )
-    row = cursor.fetchone()
+    elif ar.table == "" and ar.column == "":
+        delete_database_alias(ar.database)
+        return AliasResponse(message=(
+            f"Database alias deleted: database='{ar.database}'"
+        ))
 
-    if not row:
-        raise HTTPException(status_code=404, detail="Database not found")
+    elif ar.column == "":
+        delete_table_alias(ar.database, ar.table)
+        return AliasResponse(message=(
+            f"Table alias deleted: database='{ar.database}', table='{ar.table}"
+        ))
 
-    db_id, db_name = row["db_id"], row["db_name"]
-
-    cursor.execute(
-        "SELECT table_id, table_alias, table_name FROM db_tables WHERE db_id = %s AND (table_name = %s OR table_alias = %s);",
-        (db_id, ar.table, ar.table,)
-    )
-    row = cursor.fetchone()
-
-    if not row:
-        raise HTTPException(status_code=404, detail="Table not found")
-
-    table_id = row["table_id"]
-    table_alias = row["table_alias"]
-    table_name = row["table_name"]
-
-    if table_alias is None:
-        raise HTTPException(status_code=400, detail="Alias does not exist")
-
-    # Удаление alias
-    cursor.execute(
-        "UPDATE db_tables SET table_alias = NULL WHERE table_id = %s;",
-        (table_id,)
-    )
-    conn.commit()
-
-    cursor.close()
-    conn.close()
-
-    return AliasResponse(message=(
-        f"Table alias deleted: database='{db_name}', "
-        f"table='{table_name}', old_alias='{table_alias}'"
-    ))
+    else:
+        return AliasResponse(message=(
+            f"Please specify database, table and column correctly"
+        ))
